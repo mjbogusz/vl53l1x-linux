@@ -1,0 +1,33 @@
+image: "mjbogusz/cpp-ci:latest"
+
+stages:
+  - check
+  - build
+
+check:cppcheck:
+  stage: check
+  script:
+    - cppcheck --version
+    - tools/run-cppcheck.sh
+
+check:clang-tidy:
+  stage: check
+  script:
+    - clang-tidy --version
+    - tools/run-clang-tidy.sh
+
+check:uncrustify:
+  stage: check
+  script:
+    - uncrustify --version
+    - tools/run-uncrustify.sh --check
+
+build:gcc:
+  stage: build
+  script:
+    - mkdir -p build && cd build
+    - cmake ..
+    - make -j`nproc`
+  artifacts:
+    paths:
+      - build
