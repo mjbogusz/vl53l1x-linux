@@ -3,6 +3,7 @@
 #include "I2CBus.hpp"
 #include <chrono>
 #include <cstdint>
+#include <mutex>
 #include <string>
 
 class VL53L1X {
@@ -25,7 +26,7 @@ public:
 	};
 
 	explicit VL53L1X(
-		I2CBus* i2cBus,
+		I2CBus& i2cBus,
 		std::string gpioPath = "",
 		uint8_t address = VL53L1X::DEFAULT_DEVICE_ADDRESS,
 		std::chrono::milliseconds timeout = std::chrono::milliseconds(0)
@@ -37,6 +38,21 @@ public:
 	 * This function loads the 135 bytes default values to initialize the sensor.
 	 */
 	void initialize();
+
+	/**
+	 * Power on the sensor by setting its XSHUT pin to high via host's GPIO.
+	 */
+	void powerOn();
+
+	/**
+	 * Power off the sensor by setting its XSHUT pin to low via host's GPIO.
+	 */
+	void powerOff();
+
+	/**
+	 * Change sensor's I2C address (sets both the address on the physical sensor and within sensor's object).
+	 */
+	void setAddress(uint8_t newAddress);
 
 	/**
 	 * Start the continuous ranging operation
@@ -185,9 +201,11 @@ private:
 
 	enum RegisterAddresses : uint16_t;
 
-	I2CBus* i2cBus;
+	I2CBus& i2cBus;
 
 	const std::string gpioPath;
+
+	std::mutex gpioMutex;
 
 	/**
 	 * I2C address of the sensor
@@ -208,6 +226,8 @@ private:
 
 	// set Sigma Threshold
 	void setSigmaThreshold(uint16_t Sigma);
+
+	void setGPIO(const char& value);
 };
 
 enum VL53L1X::RegisterAddresses : uint16_t {
