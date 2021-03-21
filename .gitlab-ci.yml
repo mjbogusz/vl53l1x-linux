@@ -25,9 +25,7 @@ check:uncrustify:
 build:gcc:
   stage: build
   script:
-    - mkdir -p build && cd build
-    - cmake ..
-    - make -j`nproc`
+    - tools/build.sh
   artifacts:
     paths:
       - build
