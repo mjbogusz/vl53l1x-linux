@@ -3,11 +3,22 @@
 #include "I2CBus.hpp"
 #include <chrono>
 #include <cstdint>
+#include <memory>
 #include <mutex>
 #include <string>
 
-class VL53L1X {
+class VL53L1X: public std::enable_shared_from_this<VL53L1X> {
 public:
+	/**
+	 * A shared_ptr alias (use as VL53L1X::SharedPtr)
+	 */
+	using SharedPtr = std::shared_ptr<VL53L1X>;
+
+	/**
+	 * A shared_ptr to a constant alias (use as VL53L1X::ConstSharedPtr)
+	 */
+	using ConstSharedPtr = std::shared_ptr<const VL53L1X>;
+
 	/**
 	 * Available distance measuring modes, used in VL53L1X::setDistanceMode()
 	 */
@@ -203,6 +214,17 @@ public:
 	 * @param targetDistance The target distance in mm to calibrate against
 	 */
 	int8_t calibrateCrosstalk(uint16_t targetDistance);
+
+	/**
+	 * Create a SharedPtr instance of the VL53L1X.
+	 *
+	 * Usage: `VL53L1X::makeShared(args...)`.
+	 * See constructor (@ref VL53L1X::VL53L1X()) for details.
+	 */
+	template<typename ... Args>
+	static VL53L1X::SharedPtr makeShared(Args&& ... args) {
+		return std::make_shared<VL53L1X>(std::forward<Args>(args) ...);
+	}
 
 private:
 	static constexpr uint8_t DEFAULT_DEVICE_ADDRESS = 0x29;
