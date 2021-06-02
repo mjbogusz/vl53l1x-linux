@@ -8,13 +8,13 @@
 using namespace std::chrono_literals;
 
 VL53L1X::VL53L1X(
-	I2CBus& i2cBus,
-	std::string gpioPath,
+	I2CBus::SharedPtr i2cBus,
+	GPIOPin::SharedPtr gpioPin,
 	uint8_t address,
 	std::chrono::milliseconds timeout
 ):
-	i2cBus(i2cBus),
-	gpioPath(std::move(gpioPath)),
+	i2cBus(std::move(i2cBus)),
+	gpioPin(std::move(gpioPin)),
 	address(address),
 	timeout(timeout),
 	interruptPolarity(0),
@@ -25,7 +25,7 @@ void VL53L1X::initialize() {
 
 	// Write the default configuration, registers 0x2D to 0x87
 	for (uint8_t configAddr = 0x2D; configAddr <= 0x87; configAddr++) {
-		this->i2cBus.write8(this->address, configAddr, VL53L1X::DEFAULT_CONFIGURATION[configAddr - 0x2D]);
+		this->i2cBus->write8Reg16(this->address, configAddr, VL53L1X::DEFAULT_CONFIGURATION[configAddr - 0x2D]);
 	}
 	this->startRanging();
 	while (!this->isDataReady()) {
@@ -34,42 +34,48 @@ void VL53L1X::initialize() {
 	this->clearInterrupt();
 	this->stopRanging();
 	// two bounds VHV
-	this->i2cBus.write8(this->address, VHV_CONFIG_TIMEOUT_MACROP_LOOP_BOUND, 0x09);
-	this->i2cBus.write8(this->address, VHV_CONFIG_INIT, 0);
+	this->i2cBus->write8Reg16(this->address, VHV_CONFIG_TIMEOUT_MACROP_LOOP_BOUND, 0x09);
+	this->i2cBus->write8Reg16(this->address, VHV_CONFIG_INIT, 0);
 
-	this->interruptPolarity = !((this->i2cBus.read8(this->address, GPIO_HV_MUX_CTRL) & 0x10) >> 4);
+	this->interruptPolarity = !((this->i2cBus->read8Reg16(this->address, GPIO_HV_MUX_CTRL) & 0x10) >> 4);
 }
 
 void VL53L1X::powerOn() {
-	this->setGPIO('1');
+	if (!this->gpioPin) {
+		return;
+	}
+	this->gpioPin->set();
 
 	// as per the docs (section 2.6.1, page 12), boot duration is 1.2ms max - wait 2ms just to be sure
 	std::this_thread::sleep_for(2ms);
 }
 
 void VL53L1X::powerOff() {
-	this->setGPIO('0');
+	if (!this->gpioPin) {
+		return;
+	}
+	this->gpioPin->unset();
 }
 
 void VL53L1X::setAddress(uint8_t newAddress) {
-	this->i2cBus.write8(this->address, I2C_SLAVE_DEVICE_ADDRESS, newAddress & 0x7F);
+	this->i2cBus->write8Reg16(this->address, I2C_SLAVE_DEVICE_ADDRESS, newAddress & 0x7F);
 	this->address = newAddress;
 }
 
 void VL53L1X::clearInterrupt() {
-	this->i2cBus.write8(this->address, SYSTEM_INTERRUPT_CLEAR, 0x01);
+	this->i2cBus->write8Reg16(this->address, SYSTEM_INTERRUPT_CLEAR, 0x01);
 }
 
 void VL53L1X::startRanging() {
-	this->i2cBus.write8(this->address, SYSTEM_MODE_START, 0x40);
+	this->i2cBus->write8Reg16(this->address, SYSTEM_MODE_START, 0x40);
 }
 
 void VL53L1X::stopRanging() {
-	this->i2cBus.write8(this->address, SYSTEM_MODE_START, 0x00);
+	this->i2cBus->write8Reg16(this->address, SYSTEM_MODE_START, 0x00);
 }
 
 bool VL53L1X::isDataReady() {
-	return (this->i2cBus.read8(this->address, GPIO_TIO_HV_STATUS) & 0x01) == this->interruptPolarity;
+	return (this->i2cBus->read8Reg16(this->address, GPIO_TIO_HV_STATUS) & 0x01) == this->interruptPolarity;
 }
 
 void VL53L1X::setTimingBudget(VL53L1X::TimingBudget timingBudget) {
@@ -79,32 +85,32 @@ void VL53L1X::setTimingBudget(VL53L1X::TimingBudget timingBudget) {
 		switch (timingBudget) {
 			case TIMING_BUDGET_15_MS:
 				// only available in short distance mode
-				this->i2cBus.write16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_A_HI, 0x001D);
-				this->i2cBus.write16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_B_HI, 0x0027);
+				this->i2cBus->write16Reg16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_A_HI, 0x001D);
+				this->i2cBus->write16Reg16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_B_HI, 0x0027);
 				break;
 			case TIMING_BUDGET_20_MS:
-				this->i2cBus.write16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_A_HI, 0x0051);
-				this->i2cBus.write16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_B_HI, 0x006E);
+				this->i2cBus->write16Reg16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_A_HI, 0x0051);
+				this->i2cBus->write16Reg16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_B_HI, 0x006E);
 				break;
 			case TIMING_BUDGET_33_MS:
-				this->i2cBus.write16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_A_HI, 0x00D6);
-				this->i2cBus.write16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_B_HI, 0x006E);
+				this->i2cBus->write16Reg16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_A_HI, 0x00D6);
+				this->i2cBus->write16Reg16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_B_HI, 0x006E);
 				break;
 			case TIMING_BUDGET_50_MS:
-				this->i2cBus.write16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_A_HI, 0x01AE);
-				this->i2cBus.write16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_B_HI, 0x01E8);
+				this->i2cBus->write16Reg16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_A_HI, 0x01AE);
+				this->i2cBus->write16Reg16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_B_HI, 0x01E8);
 				break;
 			case TIMING_BUDGET_100_MS:
-				this->i2cBus.write16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_A_HI, 0x02E1);
-				this->i2cBus.write16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_B_HI, 0x0388);
+				this->i2cBus->write16Reg16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_A_HI, 0x02E1);
+				this->i2cBus->write16Reg16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_B_HI, 0x0388);
 				break;
 			case TIMING_BUDGET_200_MS:
-				this->i2cBus.write16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_A_HI, 0x03E1);
-				this->i2cBus.write16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_B_HI, 0x0496);
+				this->i2cBus->write16Reg16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_A_HI, 0x03E1);
+				this->i2cBus->write16Reg16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_B_HI, 0x0496);
 				break;
 			case TIMING_BUDGET_500_MS:
-				this->i2cBus.write16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_A_HI, 0x0591);
-				this->i2cBus.write16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_B_HI, 0x05C1);
+				this->i2cBus->write16Reg16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_A_HI, 0x0591);
+				this->i2cBus->write16Reg16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_B_HI, 0x05C1);
 				break;
 			default:
 				break;
@@ -112,28 +118,28 @@ void VL53L1X::setTimingBudget(VL53L1X::TimingBudget timingBudget) {
 	} else if (distanceMode == VL53L1X::DISTANCE_MODE_LONG) {
 		switch (timingBudget) {
 			case TIMING_BUDGET_20_MS:
-				this->i2cBus.write16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_A_HI, 0x001E);
-				this->i2cBus.write16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_B_HI, 0x0022);
+				this->i2cBus->write16Reg16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_A_HI, 0x001E);
+				this->i2cBus->write16Reg16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_B_HI, 0x0022);
 				break;
 			case TIMING_BUDGET_33_MS:
-				this->i2cBus.write16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_A_HI, 0x0060);
-				this->i2cBus.write16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_B_HI, 0x006E);
+				this->i2cBus->write16Reg16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_A_HI, 0x0060);
+				this->i2cBus->write16Reg16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_B_HI, 0x006E);
 				break;
 			case TIMING_BUDGET_50_MS:
-				this->i2cBus.write16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_A_HI, 0x00AD);
-				this->i2cBus.write16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_B_HI, 0x00C6);
+				this->i2cBus->write16Reg16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_A_HI, 0x00AD);
+				this->i2cBus->write16Reg16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_B_HI, 0x00C6);
 				break;
 			case TIMING_BUDGET_100_MS:
-				this->i2cBus.write16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_A_HI, 0x01CC);
-				this->i2cBus.write16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_B_HI, 0x01EA);
+				this->i2cBus->write16Reg16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_A_HI, 0x01CC);
+				this->i2cBus->write16Reg16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_B_HI, 0x01EA);
 				break;
 			case TIMING_BUDGET_200_MS:
-				this->i2cBus.write16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_A_HI, 0x02D9);
-				this->i2cBus.write16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_B_HI, 0x02F8);
+				this->i2cBus->write16Reg16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_A_HI, 0x02D9);
+				this->i2cBus->write16Reg16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_B_HI, 0x02F8);
 				break;
 			case TIMING_BUDGET_500_MS:
-				this->i2cBus.write16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_A_HI, 0x048F);
-				this->i2cBus.write16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_B_HI, 0x04A4);
+				this->i2cBus->write16Reg16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_A_HI, 0x048F);
+				this->i2cBus->write16Reg16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_B_HI, 0x04A4);
 				break;
 			default:
 				break;
@@ -142,7 +148,7 @@ void VL53L1X::setTimingBudget(VL53L1X::TimingBudget timingBudget) {
 }
 
 VL53L1X::TimingBudget VL53L1X::getTimingBudget() {
-	uint16_t configValue = this->i2cBus.read16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_A_HI);
+	uint16_t configValue = this->i2cBus->read16Reg16(this->address, RANGE_CONFIG_TIMEOUT_MACROP_A_HI);
 	switch (configValue) {
 		case 0x0051:
 		case 0x001E:
@@ -178,20 +184,20 @@ void VL53L1X::setDistanceMode(VL53L1X::DistanceMode mode) {
 
 	switch (mode) {
 		case VL53L1X::DISTANCE_MODE_SHORT:
-			this->i2cBus.write8(this->address, PHASECAL_CONFIG_TIMEOUT_MACROP, 0x14);
-			this->i2cBus.write8(this->address, RANGE_CONFIG_VCSEL_PERIOD_A, 0x07);
-			this->i2cBus.write8(this->address, RANGE_CONFIG_VCSEL_PERIOD_B, 0x05);
-			this->i2cBus.write8(this->address, RANGE_CONFIG_VALID_PHASE_HIGH, 0x38);
-			this->i2cBus.write16(this->address, SD_CONFIG_WOI_SD0, 0x0705);
-			this->i2cBus.write16(this->address, SD_CONFIG_INITIAL_PHASE_SD0, 0x0606);
+			this->i2cBus->write8Reg16(this->address, PHASECAL_CONFIG_TIMEOUT_MACROP, 0x14);
+			this->i2cBus->write8Reg16(this->address, RANGE_CONFIG_VCSEL_PERIOD_A, 0x07);
+			this->i2cBus->write8Reg16(this->address, RANGE_CONFIG_VCSEL_PERIOD_B, 0x05);
+			this->i2cBus->write8Reg16(this->address, RANGE_CONFIG_VALID_PHASE_HIGH, 0x38);
+			this->i2cBus->write16Reg16(this->address, SD_CONFIG_WOI_SD0, 0x0705);
+			this->i2cBus->write16Reg16(this->address, SD_CONFIG_INITIAL_PHASE_SD0, 0x0606);
 			break;
 		case VL53L1X::DISTANCE_MODE_LONG:
-			this->i2cBus.write8(this->address, PHASECAL_CONFIG_TIMEOUT_MACROP, 0x0A);
-			this->i2cBus.write8(this->address, RANGE_CONFIG_VCSEL_PERIOD_A, 0x0F);
-			this->i2cBus.write8(this->address, RANGE_CONFIG_VCSEL_PERIOD_B, 0x0D);
-			this->i2cBus.write8(this->address, RANGE_CONFIG_VALID_PHASE_HIGH, 0xB8);
-			this->i2cBus.write16(this->address, SD_CONFIG_WOI_SD0, 0x0F0D);
-			this->i2cBus.write16(this->address, SD_CONFIG_INITIAL_PHASE_SD0, 0x0E0E);
+			this->i2cBus->write8Reg16(this->address, PHASECAL_CONFIG_TIMEOUT_MACROP, 0x0A);
+			this->i2cBus->write8Reg16(this->address, RANGE_CONFIG_VCSEL_PERIOD_A, 0x0F);
+			this->i2cBus->write8Reg16(this->address, RANGE_CONFIG_VCSEL_PERIOD_B, 0x0D);
+			this->i2cBus->write8Reg16(this->address, RANGE_CONFIG_VALID_PHASE_HIGH, 0xB8);
+			this->i2cBus->write16Reg16(this->address, SD_CONFIG_WOI_SD0, 0x0F0D);
+			this->i2cBus->write16Reg16(this->address, SD_CONFIG_INITIAL_PHASE_SD0, 0x0E0E);
 			break;
 		default:
 			break;
@@ -200,7 +206,7 @@ void VL53L1X::setDistanceMode(VL53L1X::DistanceMode mode) {
 }
 
 VL53L1X::DistanceMode VL53L1X::getDistanceMode() {
-	uint8_t configValue = this->i2cBus.read8(this->address, PHASECAL_CONFIG_TIMEOUT_MACROP);
+	uint8_t configValue = this->i2cBus->read8Reg16(this->address, PHASECAL_CONFIG_TIMEOUT_MACROP);
 
 	if (configValue == 0x14) {
 		return VL53L1X::DISTANCE_MODE_SHORT;
@@ -212,8 +218,9 @@ VL53L1X::DistanceMode VL53L1X::getDistanceMode() {
 }
 
 void VL53L1X::setInterMeasurementPeriod(uint16_t period) {
-	uint16_t clockPLL = 0x03FF & this->i2cBus.read16(this->address, VL53L1_RESULT_OSC_CALIBRATE_VAL);
-	this->i2cBus.write32(this->address, VL53L1_SYSTEM_INTERMEASUREMENT_PERIOD, (uint32_t)(clockPLL * period * 1.075));
+	uint16_t clockPLL = 0x03FF & this->i2cBus->read16Reg16(this->address, VL53L1_RESULT_OSC_CALIBRATE_VAL);
+	auto periodRaw = static_cast<uint32_t>(clockPLL * period * 1.075);
+	this->i2cBus->write32Reg16(this->address, VL53L1_SYSTEM_INTERMEASUREMENT_PERIOD, periodRaw);
 
 	double data = (clockPLL * period * 1075) % 1000;
 	while (data > 1) {
@@ -223,8 +230,8 @@ void VL53L1X::setInterMeasurementPeriod(uint16_t period) {
 }
 
 uint16_t VL53L1X::getInterMeasurementPeriod() {
-	uint16_t clockPLL = 0x03FF & this->i2cBus.read16(this->address, VL53L1_RESULT_OSC_CALIBRATE_VAL);
-	uint32_t period = this->i2cBus.read32(this->address, VL53L1_SYSTEM_INTERMEASUREMENT_PERIOD);
+	uint16_t clockPLL = 0x03FF & this->i2cBus->read16Reg16(this->address, VL53L1_RESULT_OSC_CALIBRATE_VAL);
+	uint32_t period = this->i2cBus->read32Reg16(this->address, VL53L1_SYSTEM_INTERMEASUREMENT_PERIOD);
 
 	return static_cast<uint16_t>((period + this->decimal) / (clockPLL * 1.075));
 }
@@ -249,17 +256,18 @@ uint16_t VL53L1X::getDistance() {
 }
 
 uint16_t VL53L1X::getSignalRate() {
-	return 8 * this->i2cBus.read16(this->address, VL53L1_RESULT_DSS_ACTUAL_EFFECTIVE_SPADS_SD0);
+	return 8 * this->i2cBus->read16Reg16(this->address, VL53L1_RESULT_DSS_ACTUAL_EFFECTIVE_SPADS_SD0);
 }
 
-void VL53L1X::setOffset(int16_t offset) {
-	this->i2cBus.write16(this->address, ALGO_PART_TO_PART_RANGE_OFFSET_MM, (uint16_t)(offset * 4));
-	this->i2cBus.write16(this->address, MM_CONFIG_INNER_OFFSET_MM, 0x0);
-	this->i2cBus.write16(this->address, MM_CONFIG_OUTER_OFFSET_MM, 0x0);
+void VL53L1X::setOffset(int16_t offsetValue) {
+	auto offsetRaw = static_cast<uint16_t>(offsetValue * 4);
+	this->i2cBus->write16Reg16(this->address, ALGO_PART_TO_PART_RANGE_OFFSET_MM, offsetRaw);
+	this->i2cBus->write16Reg16(this->address, MM_CONFIG_INNER_OFFSET_MM, 0x0);
+	this->i2cBus->write16Reg16(this->address, MM_CONFIG_OUTER_OFFSET_MM, 0x0);
 }
 
 int16_t VL53L1X::getOffset() {
-	uint16_t tmp = this->i2cBus.read16(this->address, ALGO_PART_TO_PART_RANGE_OFFSET_MM);
+	uint16_t tmp = this->i2cBus->read16Reg16(this->address, ALGO_PART_TO_PART_RANGE_OFFSET_MM);
 	// adjust
 	if (tmp & 0x1000) {
 		tmp |= 0xE000;
@@ -269,30 +277,31 @@ int16_t VL53L1X::getOffset() {
 }
 
 void VL53L1X::setCrosstalk(uint16_t crosstalkValue) {
-	this->i2cBus.write16(this->address, ALGO_CROSSTALK_COMPENSATION_X_PLANE_GRADIENT_KCPS, 0x0000);
-	this->i2cBus.write16(this->address, ALGO_CROSSTALK_COMPENSATION_Y_PLANE_GRADIENT_KCPS, 0x0000);
-	this->i2cBus.write16(this->address, ALGO_CROSSTALK_COMPENSATION_PLANE_OFFSET_KCPS, (crosstalkValue << 9) / 1000);
+	uint16_t crosstalkRaw = (crosstalkValue << 9) / 1000;
+	this->i2cBus->write16Reg16(this->address, ALGO_CROSSTALK_COMPENSATION_X_PLANE_GRADIENT_KCPS, 0x0000);
+	this->i2cBus->write16Reg16(this->address, ALGO_CROSSTALK_COMPENSATION_Y_PLANE_GRADIENT_KCPS, 0x0000);
+	this->i2cBus->write16Reg16(this->address, ALGO_CROSSTALK_COMPENSATION_PLANE_OFFSET_KCPS, crosstalkRaw);
 }
 
 uint16_t VL53L1X::getCrosstalk() {
-	uint16_t crosstalk = this->i2cBus.read16(this->address, ALGO_CROSSTALK_COMPENSATION_PLANE_OFFSET_KCPS);
+	uint16_t crosstalk = this->i2cBus->read16Reg16(this->address, ALGO_CROSSTALK_COMPENSATION_PLANE_OFFSET_KCPS);
 	return (crosstalk * 1000) >> 9;
 }
 
 uint16_t VL53L1X::getDistanceThresholdLow() {
-	return this->i2cBus.read16(this->address, SYSTEM_THRESH_LOW);
+	return this->i2cBus->read16Reg16(this->address, SYSTEM_THRESH_LOW);
 }
 
 uint16_t VL53L1X::getDistanceThresholdHigh() {
-	return this->i2cBus.read16(this->address, SYSTEM_THRESH_HIGH);
+	return this->i2cBus->read16Reg16(this->address, SYSTEM_THRESH_HIGH);
 }
 
 int8_t VL53L1X::calibrateOffset(uint16_t targetDistance) {
 	constexpr uint8_t numberOfMeasurements = 50;
 
-	this->i2cBus.write16(this->address, ALGO_PART_TO_PART_RANGE_OFFSET_MM, 0x0);
-	this->i2cBus.write16(this->address, MM_CONFIG_INNER_OFFSET_MM, 0x0);
-	this->i2cBus.write16(this->address, MM_CONFIG_OUTER_OFFSET_MM, 0x0);
+	this->i2cBus->write16Reg16(this->address, ALGO_PART_TO_PART_RANGE_OFFSET_MM, 0x0);
+	this->i2cBus->write16Reg16(this->address, MM_CONFIG_INNER_OFFSET_MM, 0x0);
+	this->i2cBus->write16Reg16(this->address, MM_CONFIG_OUTER_OFFSET_MM, 0x0);
 
 	this->startRanging();
 	int16_t averageDistance = 0;
@@ -307,14 +316,14 @@ int8_t VL53L1X::calibrateOffset(uint16_t targetDistance) {
 
 	averageDistance = averageDistance / numberOfMeasurements;
 	int16_t offset = targetDistance - averageDistance;
-	this->i2cBus.write16(this->address, ALGO_PART_TO_PART_RANGE_OFFSET_MM, offset * 4);
+	this->i2cBus->write16Reg16(this->address, ALGO_PART_TO_PART_RANGE_OFFSET_MM, offset * 4);
 	return offset;
 }
 
 int8_t VL53L1X::calibrateCrosstalk(uint16_t targetDistance) {
 	constexpr uint8_t numberOfMeasurements = 50;
 
-	this->i2cBus.write16(this->address, ALGO_CROSSTALK_COMPENSATION_PLANE_OFFSET_KCPS, 0);
+	this->i2cBus->write16Reg16(this->address, ALGO_CROSSTALK_COMPENSATION_PLANE_OFFSET_KCPS, 0);
 
 	this->startRanging();
 	float averageSignalRate = 0;
@@ -338,28 +347,6 @@ int8_t VL53L1X::calibrateCrosstalk(uint16_t targetDistance) {
 	// Calculate Xtalk value
 	float crosstalk = (averageSignalRate * (1 - averageDistance / static_cast<float>(targetDistance))) / averageSpadNb;
 	uint16_t crosstalkU16 = 512 * static_cast<uint16_t>(crosstalk);
-	this->i2cBus.write16(this->address, ALGO_CROSSTALK_COMPENSATION_PLANE_OFFSET_KCPS, crosstalkU16);
+	this->i2cBus->write16Reg16(this->address, ALGO_CROSSTALK_COMPENSATION_PLANE_OFFSET_KCPS, crosstalkU16);
 	return crosstalkU16;
-}
-
-void VL53L1X::setGPIO(const char& value) {
-	if (this->gpioPath.empty()) {
-		return;
-	}
-
-	std::lock_guard<std::mutex> guard(this->gpioMutex);
-	std::ofstream file;
-
-	file.open(this->gpioPath.c_str(), std::ofstream::out);
-	if (!file.is_open() || !file.good()) {
-		file.close();
-		throw(std::runtime_error(
-			std::string("Failed opening file: ")
-			+ this->gpioPath
-			+ ", reason: "
-			+ std::strerror(errno)
-		));
-	}
-	file << value;
-	file.close();
 }

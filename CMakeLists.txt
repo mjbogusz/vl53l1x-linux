@@ -25,7 +25,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror")
 add_library(vl53l1x SHARED
   src/VL53L1X.cpp
   src/VL53L1X_default_config.cpp
-  src/I2CBus.cpp
 )
 target_include_directories(vl53l1x
   PUBLIC
@@ -38,6 +37,17 @@ set_target_properties(vl53l1x PROPERTIES
   VERSION ${PROJECT_VERSION}
   SOVERSION 1
 )
+
+find_package(ament_cmake QUIET)
+find_package(sbc-linux-interfaces QUIET)
+if(ament_cmake_FOUND AND sbc-linux-interfaces_FOUND)
+  message(STATUS "Ament found, linking against ament package")
+  ament_target_dependencies(vl53l1x sbc-linux-interfaces)
+else()
+  message(STATUS "Ament not found, linking against submodule")
+  add_subdirectory(libs/sbc-linux-interfaces)
+endif()
+target_link_libraries(vl53l1x sbc-linux-interfaces)
 
 # Workaround for older GCCs
 if (CMAKE_COMPILER_IS_GNUCXX)

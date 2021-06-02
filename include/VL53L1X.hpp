@@ -1,6 +1,8 @@
 #pragma once
 
-#include "I2CBus.hpp"
+#include <GPIOPin.hpp>
+#include <I2CBus.hpp>
+
 #include <chrono>
 #include <cstdint>
 #include <memory>
@@ -42,9 +44,17 @@ public:
 		TIMING_BUDGET_500_MS = 500
 	};
 
+	/**
+	 * Create a new VL53L1X sensor instance.
+	 *
+	 * @param i2cBus The I2C bus to use
+	 * @param gpioPin The GPIO pin, connected to the sensor's XSHUT pin (nullptr disables shutting down the sensor)
+	 * @param address The sensor's address (only needed if already set to other than the default)
+	 * @param timeout The measurement timeout (default = 0 means no timeout)
+	 */
 	explicit VL53L1X(
-		I2CBus& i2cBus,
-		std::string gpioPath = "",
+		I2CBus::SharedPtr i2cBus,
+		GPIOPin::SharedPtr gpioPin = nullptr,
 		uint8_t address = VL53L1X::DEFAULT_DEVICE_ADDRESS,
 		std::chrono::milliseconds timeout = std::chrono::milliseconds(0)
 	);
@@ -233,11 +243,9 @@ private:
 
 	enum RegisterAddresses : uint16_t;
 
-	I2CBus& i2cBus;
+	I2CBus::SharedPtr i2cBus;
 
-	const std::string gpioPath;
-
-	std::mutex gpioMutex;
+	GPIOPin::SharedPtr gpioPin;
 
 	/**
 	 * I2C address of the sensor
@@ -258,8 +266,6 @@ private:
 
 	// set Sigma Threshold
 	void setSigmaThreshold(uint16_t Sigma);
-
-	void setGPIO(const char& value);
 };
 
 enum VL53L1X::RegisterAddresses : uint16_t {

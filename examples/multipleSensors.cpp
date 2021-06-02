@@ -1,5 +1,6 @@
-#include "I2CBus.hpp"
 #include "VL53L1X.hpp"
+#include <GPIOPin.hpp>
+#include <I2CBus.hpp>
 
 #include <iostream>
 #include <csignal>
@@ -13,10 +14,14 @@ void signalHandler(int signalNumber) {
 }
 
 int main() {
-	I2CBus i2c("/dev/i2c-3");
-	VL53L1X sensor1(i2c, "/sys/class/gpio/gpio6/value");
-	VL53L1X sensor2(i2c, "/sys/class/gpio/gpio16/value");
-	VL53L1X sensor3(i2c, "/sys/class/gpio/gpio19/value");
+	auto i2c = I2CBus::makeShared("/dev/i2c-3");
+	auto gpio6 = GPIOPin::makeShared("/sys/class/gpio/gpio6");
+	auto gpio16 = GPIOPin::makeShared("/sys/class/gpio/gpio16");
+	auto gpio19 = GPIOPin::makeShared("/sys/class/gpio/gpio19");
+
+	VL53L1X sensor1(i2c, gpio6);
+	VL53L1X sensor2(i2c, gpio16);
+	VL53L1X sensor3(i2c, gpio19);
 
 	std::signal(SIGINT, signalHandler);
 
