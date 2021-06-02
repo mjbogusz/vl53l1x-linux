@@ -8,6 +8,9 @@
 
 class VL53L1X {
 public:
+	/**
+	 * Available distance measuring modes, used in VL53L1X::setDistanceMode()
+	 */
 	enum DistanceMode : uint8_t {
 		Short,
 		Long,
@@ -15,6 +18,9 @@ public:
 		// Medium: TBD
 	};
 
+	/**
+	 * Available measurement timing budgets (milliseconds), used in VL53L1X::setTimingBudget()
+	 */
 	enum TimingBudget : uint16_t {
 		TB_15 = 15,
 		TB_20 = 20,
@@ -134,11 +140,11 @@ public:
 	/**
 	 * Apply the correction offset value (in millimeters) to the sensor
 	 *
-	 * @param The offset, in mm, to apply to the sensor (range: -1024 ~ 1023)
+	 * @param offsetValue The offset, in mm, to apply to the sensor (range: -1024 ~ 1023)
 	 *
 	 * @note This value is to be found during calibration, stored in the host system and applied on every startup.
 	 */
-	void setOffset(int16_t OffsetValue);
+	void setOffset(int16_t offsetValue);
 
 	/**
 	 * Get the currently set correction offset programmed in the sensor
@@ -150,7 +156,7 @@ public:
 	/**
 	 * Apply the crosstalk value (in counts per second) to the sensor
 	 *
-	 * @param The crosstalk correction to apply
+	 * @param crosstalkValue The crosstalk correction to apply
 	 *
 	 * @note As with the offset, this value is to be found during calibration, stored in the host system and applied on every startup.
 	 * @note crosstalkValue = 512*(SignalRate*(1-(Distance/targetDistance)))/SpadNb

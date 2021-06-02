@@ -3,25 +3,13 @@
 [![pipeline status](https://gitlab.com/mjbogusz/vl53l1x-linux/badges/master/pipeline.svg)](https://gitlab.com/mjbogusz/vl53l1x-linux/-/commits/master)
 <!-- [![coverage report](https://gitlab.com/mjbogusz/vl53l1x-linux/badges/master/coverage.svg)](https://gitlab.com/mjbogusz/vl53l1x-linux/-/commits/master) -->
 
-* Version: 0.1.0
+* Version: 0.2.0
 * Status: minimal mostly working example for 1 sensor
 * Homepage: https://gitlab.com/mjbogusz/vl53l1x-linux
 * Mirror: https://github.com/mjbogusz/vl53l1x-linux
+* Documentation/API: https://mjbogusz.gitlab.io/vl53l1x-linux/
 
-## Table of Contents:
-<!-- MarkdownTOC -->
-
-* [About](#about)
-* [Supported platforms](#supported-platforms)
-* [Getting started](#getting-started)
-	* [Hardware](#hardware)
-		* [Connections](#connections)
-	* [Software](#software)
-* [Examples](#examples)
-* [API](#api)
-* [Credits](#credits)
-
-<!-- /MarkdownTOC -->
+[[_TOC_]]
 
 ## About
 This is a library for GNU/Linux-based SBCs that helps interfacing with the ST's [VL53L1X time-of-flight distance sensor](https://www.pololu.com/product/3415).
@@ -46,9 +34,6 @@ TBD
 Several examples are available that show how to use the library.
 
 TBD
-
-## API
-See docs [TBD]
 
 ## Credits
 * based upon [`DFRobot_VL53L1X Library for Arduino`](https://github.com/DFRobot/DFRobot_VL53L1X) by [luoyufeng](yufeng.luo@dfrobot.com)
