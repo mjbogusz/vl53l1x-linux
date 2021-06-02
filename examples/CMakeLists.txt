@@ -3,7 +3,7 @@ add_executable(getDistance
 	getDistance.cpp
 )
 target_link_libraries(getDistance
-	PRIVATE VL53L1X sbc-linux-interfaces
+	PRIVATE VL53L1X
 )
 
 # Minimal multiple sensors example
@@ -11,5 +11,5 @@ add_executable(multipleSensors
 	multipleSensors.cpp
 )
 target_link_libraries(multipleSensors
-	PRIVATE VL53L1X sbc-linux-interfaces
+	PRIVATE VL53L1X
 )
