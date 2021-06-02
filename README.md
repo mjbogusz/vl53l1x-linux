@@ -3,8 +3,8 @@
 [![pipeline status](https://gitlab.com/mjbogusz/vl53l1x-linux/badges/master/pipeline.svg)](https://gitlab.com/mjbogusz/vl53l1x-linux/-/commits/master)
 <!-- [![coverage report](https://gitlab.com/mjbogusz/vl53l1x-linux/badges/master/coverage.svg)](https://gitlab.com/mjbogusz/vl53l1x-linux/-/commits/master) -->
 
-* Version: 0.2.0
-* Status: minimal mostly working example for 1 sensor
+* Version: 0.2.1
+* Status: should-be-working, 2 examples provided
 * Homepage: https://gitlab.com/mjbogusz/vl53l1x-linux
 * Mirror: https://github.com/mjbogusz/vl53l1x-linux
 * Documentation/API: https://mjbogusz.gitlab.io/vl53l1x-linux/

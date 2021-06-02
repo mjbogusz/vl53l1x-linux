@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
 	<name>vl53l1x-linux</name>
-	<version>0.2.0</version>
+	<version>0.2.1</version>
 	<description>A VL53L1X sensor interfacing library for GNU/Linux</description>
 
 	<maintainer email="mjbogusz@gitlab.com">mjbogusz</maintainer>
