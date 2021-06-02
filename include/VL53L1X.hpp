@@ -72,7 +72,11 @@ public:
 	bool isDataReady();
 
 	/**
-	 * Get the distance measured by the sensor in mm
+	 * Get the distance measured by the sensor in mm.
+	 *
+	 * This method can return 2 special values:
+	 *  - 65535 means a timeout has occured
+	 *  - 16384 means an out-of-range measurement (>4m)
 	 *
 	 * @return The measured distance
 	 */

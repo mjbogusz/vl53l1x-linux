@@ -230,10 +230,20 @@ uint16_t VL53L1X::getInterMeasurementPeriod() {
 }
 
 uint16_t VL53L1X::getDistance() {
-	uint16_t distance = this->i2cBus.read16(this->address, VL53L1_RESULT_FINAL_CROSSTALK_CORRECTED_RANGE_MM_SD0);
+	auto startTime = std::chrono::system_clock::now();
+	while (true) {
+		if (this->isDataReady()) {
+			break;
+		}
+		if (this->timeout.count() && std::chrono::system_clock::now() - startTime > this->timeout) {
+			return 65535;
+		}
+		std::this_thread::sleep_for(5ms);
+	}
+	uint16_t distance = this->i2cBus->read16Reg16(this->address, VL53L1_RESULT_FINAL_CROSSTALK_CORRECTED_RANGE_MM_SD0);
 	this->clearInterrupt();
 	if (distance > 4000) {
-		distance = 65535;
+		distance = 16384;
 	}
 	return distance;
 }
