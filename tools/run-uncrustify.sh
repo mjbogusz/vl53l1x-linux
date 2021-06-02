@@ -1,5 +1,7 @@
-#!/bin/sh
+#!/usr/bin/env sh
+
 set -e
+set -u
 
 cd $(dirname $0)/..
 export UNCRUSTIFY_CONFIG="$(dirname $0)/../.uncrustify.cfg"
