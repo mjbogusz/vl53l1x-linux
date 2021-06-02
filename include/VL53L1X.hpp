@@ -23,9 +23,9 @@ public:
 	 * Available distance measuring modes, used in VL53L1X::setDistanceMode()
 	 */
 	enum DistanceMode : uint8_t {
-		Short,
-		Long,
-		Unknown
+		DISTANCE_MODE_SHORT,
+		DISTANCE_MODE_LONG,
+		DISTANCE_MODE_UNKNOWN
 		// Medium: TBD
 	};
 
@@ -33,13 +33,13 @@ public:
 	 * Available measurement timing budgets (milliseconds), used in VL53L1X::setTimingBudget()
 	 */
 	enum TimingBudget : uint16_t {
-		TB_15 = 15,
-		TB_20 = 20,
-		TB_33 = 33,
-		TB_50 = 50,
-		TB_100 = 100,
-		TB_200 = 200,
-		TB_500 = 500
+		TIMING_BUDGET_15_MS = 15,
+		TIMING_BUDGET_20_MS = 20,
+		TIMING_BUDGET_33_MS = 33,
+		TIMING_BUDGET_50_MS = 50,
+		TIMING_BUDGET_100_MS = 100,
+		TIMING_BUDGET_200_MS = 200,
+		TIMING_BUDGET_500_MS = 500
 	};
 
 	explicit VL53L1X(
@@ -119,13 +119,13 @@ public:
 	VL53L1X::DistanceMode getDistanceMode();
 
 	/**
-	 * Set the timing budget in ms
+	 * Set the timing budget
 	 *
 	 * @see VL53L1X::TimingBudget for possible values
 	 *
 	 * @param timingBudget The timing budget to set
 	 */
-	void setTimingBudgetInMs(VL53L1X::TimingBudget timingBudget);
+	void setTimingBudget(VL53L1X::TimingBudget timingBudget);
 
 	/**
 	 * Get the current timing budget in ms
