@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 
-project(VL53L1X
+project(vl53l1x-linux
   LANGUAGES CXX C
   VERSION 0.2.1
   DESCRIPTION "A VL53L1X sensor interfacing library for GNU/Linux"

@@ -6,7 +6,7 @@
 	<description>A VL53L1X sensor interfacing library for GNU/Linux</description>
 
 	<maintainer email="mjbogusz@gitlab.com">mjbogusz</maintainer>
-	<license>TBD</license>
+	<license>LGPLv2.1</license>
 
 	<url type="website">https://gitlab.com/mjbogusz/vl53l1x-linux</url>
 	<url type="repository">https://gitlab.com/mjbogusz/vl53l1x-linux</url>
