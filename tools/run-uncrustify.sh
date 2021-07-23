@@ -5,7 +5,7 @@ set -u
 
 cd $(dirname $0)/..
 export UNCRUSTIFY_CONFIG="$(dirname $0)/../.uncrustify.cfg"
-export PREFIX="/tmp/uncrustify/apcar_teleop"
+export PREFIX="/tmp/uncrustify/$(basename $(realpath $(dirname $0)/..))"
 export EXIT_FAILURE=1
 
 print_help() {
