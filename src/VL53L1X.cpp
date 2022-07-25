@@ -22,6 +22,10 @@ VL53L1X::VL53L1X(
 
 void VL53L1X::initialize() {
 	// TODO: soft-restart, GPIO restart (?)
+	this->i2cBus->write8Reg16(this->address, SOFT_RESET, 0x00);
+	std::this_thread::sleep_for(1ms);
+	this->i2cBus->write8Reg16(this->address, SOFT_RESET, 0x01);
+	std::this_thread::sleep_for(10ms);
 
 	// Write the default configuration, registers 0x2D to 0x87
 	for (uint8_t configAddr = 0x2D; configAddr <= 0x87; configAddr++) {
