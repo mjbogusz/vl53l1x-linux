@@ -27,6 +27,11 @@ add_library(vl53l1x SHARED
   src/VL53L1X_default_config.cpp
   src/I2CBus.cpp
 )
+add_library(vl53l1x_static STATIC
+  src/VL53L1X.cpp
+  src/VL53L1X_default_config.cpp
+  src/I2CBus.cpp
+)
 target_include_directories(vl53l1x
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -38,6 +43,18 @@ set_target_properties(vl53l1x PROPERTIES
   VERSION ${PROJECT_VERSION}
   SOVERSION 1
 )
+target_include_directories(vl53l1x_static
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+  PRIVATE
+    src
+)
+set_target_properties(vl53l1x_static PROPERTIES
+  VERSION ${PROJECT_VERSION}
+  SOVERSION 1
+  OUTPUT_NAME vl53l1x
+)
 
 # Workaround for older GCCs
 if (CMAKE_COMPILER_IS_GNUCXX)
@@ -45,6 +62,7 @@ if (CMAKE_COMPILER_IS_GNUCXX)
   if (NOT GCC_VERSION VERSION_GREATER 8.0)
     message(STATUS "g++ <= 8 detected, adding explicit link to stdc++fs")
     target_link_libraries(vl53l1x stdc++fs)
+    target_link_libraries(vl53l1x_static stdc++fs)
   endif()
 endif()
 
@@ -53,6 +71,12 @@ endif()
 ###
 # Install the main target (the library itself)
 install(TARGETS vl53l1x
+  EXPORT ${PROJECT_NAME}-targets
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+install(TARGETS vl53l1x_static
   EXPORT ${PROJECT_NAME}-targets
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
