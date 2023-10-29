@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 
 project(vl53l1x-linux
   LANGUAGES CXX C
-  VERSION 0.2.2
+  VERSION 0.2.3
   DESCRIPTION "A VL53L1X sensor interfacing library for GNU/Linux"
 )
 
@@ -34,6 +34,17 @@ target_include_directories(${PROJECT_NAME}
   PRIVATE
     src
 )
+add_library(${PROJECT_NAME}_static STATIC
+  src/VL53L1X.cpp
+  src/VL53L1X_default_config.cpp
+)
+target_include_directories(${PROJECT_NAME}_static
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+  PRIVATE
+    src
+)
 
 # Link against sbc-linux-interfaces
 find_package(ament_cmake QUIET)
@@ -46,11 +57,17 @@ else()
   add_subdirectory(libs/sbc-linux-interfaces)
 endif()
 target_link_libraries(${PROJECT_NAME} sbc-linux-interfaces)
+target_link_libraries(${PROJECT_NAME}_static sbc-linux-interfaces)
 
 # Set the library object version
 set_target_properties(${PROJECT_NAME} PROPERTIES
   VERSION ${PROJECT_VERSION}
   SOVERSION 1
+)
+set_target_properties(${PROJECT_NAME}_static PROPERTIES
+  VERSION ${PROJECT_VERSION}
+  SOVERSION 1
+  OUTPUT_NAME ${PROJECT_NAME}
 )
 
 # Workaround for older GCCs
@@ -59,6 +76,7 @@ if (CMAKE_COMPILER_IS_GNUCXX)
   if (NOT GCC_VERSION VERSION_GREATER 8.0)
     message(STATUS "g++ <= 8 detected, adding explicit link to stdc++fs")
     target_link_libraries(${PROJECT_NAME} stdc++fs)
+    target_link_libraries(${PROJECT_NAME}_static stdc++fs)
   endif()
 endif()
 
@@ -67,6 +85,12 @@ endif()
 ###
 # Install the main target (the library itself)
 install(TARGETS ${PROJECT_NAME}
+  EXPORT ${PROJECT_NAME}-targets
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+install(TARGETS ${PROJECT_NAME}_static
   EXPORT ${PROJECT_NAME}-targets
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
