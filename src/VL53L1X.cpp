@@ -21,7 +21,11 @@ VL53L1X::VL53L1X(
 	decimal(0.0) {}
 
 void VL53L1X::initialize() {
-	// TODO: soft-restart, GPIO restart (?)
+	// TODO: GPIO restart (?)
+
+	// Perform a soft restart, as if chip is already previously started on init, then this method hangs
+	this->i2cBus.write8(this->address, SOFT_RESET, 0x0);
+	this->i2cBus.write8(this->address, SOFT_RESET, 0x1);
 
 	// Write the default configuration, registers 0x2D to 0x87
 	for (uint8_t configAddr = 0x2D; configAddr <= 0x87; configAddr++) {
