@@ -1,5 +1,5 @@
-#include "I2CBus.hpp"
 #include "VL53L1X.hpp"
+#include <I2CBus.hpp>
 
 #include <iostream>
 #include <csignal>
@@ -13,7 +13,7 @@ void signalHandler(int signalNumber) {
 }
 
 int main() {
-	I2CBus i2c("/dev/i2c-5");
+	auto i2c = I2CBus::makeShared("/dev/i2c-5");
 	VL53L1X sensor(i2c);
 
 	std::signal(SIGINT, signalHandler);

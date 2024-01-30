@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
-project(VL53L1X_Linux
+
+project(vl53l1x-linux
   LANGUAGES CXX C
-  VERSION 0.1.0
+  VERSION 0.2.3
   DESCRIPTION "A VL53L1X sensor interfacing library for GNU/Linux"
 )
 
@@ -22,38 +23,51 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror")
 ###
 # Project targets
 ###
-add_library(vl53l1x SHARED
+add_library(${PROJECT_NAME} SHARED
   src/VL53L1X.cpp
   src/VL53L1X_default_config.cpp
-  src/I2CBus.cpp
 )
-add_library(vl53l1x_static STATIC
-  src/VL53L1X.cpp
-  src/VL53L1X_default_config.cpp
-  src/I2CBus.cpp
-)
-target_include_directories(vl53l1x
+target_include_directories(${PROJECT_NAME}
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
   PRIVATE
     src
 )
-set_target_properties(vl53l1x PROPERTIES
-  VERSION ${PROJECT_VERSION}
-  SOVERSION 1
+add_library(${PROJECT_NAME}_static STATIC
+  src/VL53L1X.cpp
+  src/VL53L1X_default_config.cpp
 )
-target_include_directories(vl53l1x_static
+target_include_directories(${PROJECT_NAME}_static
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
   PRIVATE
     src
 )
-set_target_properties(vl53l1x_static PROPERTIES
+
+# Link against sbc-linux-interfaces
+find_package(ament_cmake QUIET)
+find_package(sbc-linux-interfaces QUIET)
+if(ament_cmake_FOUND AND sbc-linux-interfaces_FOUND)
+  message(STATUS "Ament found, linking against ament package")
+  ament_target_dependencies(${PROJECT_NAME} sbc-linux-interfaces)
+else()
+  message(STATUS "Ament not found, linking against submodule")
+  add_subdirectory(libs/sbc-linux-interfaces)
+endif()
+target_link_libraries(${PROJECT_NAME} sbc-linux-interfaces)
+target_link_libraries(${PROJECT_NAME}_static sbc-linux-interfaces)
+
+# Set the library object version
+set_target_properties(${PROJECT_NAME} PROPERTIES
   VERSION ${PROJECT_VERSION}
   SOVERSION 1
-  OUTPUT_NAME vl53l1x
+)
+set_target_properties(${PROJECT_NAME}_static PROPERTIES
+  VERSION ${PROJECT_VERSION}
+  SOVERSION 1
+  OUTPUT_NAME ${PROJECT_NAME}
 )
 
 # Workaround for older GCCs
@@ -61,8 +75,8 @@ if (CMAKE_COMPILER_IS_GNUCXX)
   execute_process(COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
   if (NOT GCC_VERSION VERSION_GREATER 8.0)
     message(STATUS "g++ <= 8 detected, adding explicit link to stdc++fs")
-    target_link_libraries(vl53l1x stdc++fs)
-    target_link_libraries(vl53l1x_static stdc++fs)
+    target_link_libraries(${PROJECT_NAME} stdc++fs)
+    target_link_libraries(${PROJECT_NAME}_static stdc++fs)
   endif()
 endif()
 
@@ -70,30 +84,34 @@ endif()
 # Install targets
 ###
 # Install the main target (the library itself)
-install(TARGETS vl53l1x
+install(TARGETS ${PROJECT_NAME}
   EXPORT ${PROJECT_NAME}-targets
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
-install(TARGETS vl53l1x_static
+install(TARGETS ${PROJECT_NAME}_static
   EXPORT ${PROJECT_NAME}-targets
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
-# Install the headers
+# Install the headers and package.xml
 install(
   DIRECTORY ${PROJECT_SOURCE_DIR}/include/
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/vl53l1x
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+install(
+  FILES ${PROJECT_SOURCE_DIR}/package.xml
+  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}
 )
 
 # Install the CMake targets
 install(
   EXPORT ${PROJECT_NAME}-targets
   FILE ${PROJECT_NAME}-targets.cmake
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME}/cmake
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME}
 )
 
 # Prepare and install the package version file

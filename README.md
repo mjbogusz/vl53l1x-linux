@@ -3,25 +3,13 @@
 [![pipeline status](https://gitlab.com/mjbogusz/vl53l1x-linux/badges/master/pipeline.svg)](https://gitlab.com/mjbogusz/vl53l1x-linux/-/commits/master)
 <!-- [![coverage report](https://gitlab.com/mjbogusz/vl53l1x-linux/badges/master/coverage.svg)](https://gitlab.com/mjbogusz/vl53l1x-linux/-/commits/master) -->
 
-* Version: 0.1.0
-* Status: minimal mostly working example for 1 sensor
+* Version: 0.2.1
+* Status: should-be-working, 2 examples provided
 * Homepage: https://gitlab.com/mjbogusz/vl53l1x-linux
 * Mirror: https://github.com/mjbogusz/vl53l1x-linux
+* Documentation/API: https://mjbogusz.gitlab.io/vl53l1x-linux/
 
-## Table of Contents:
-<!-- MarkdownTOC -->
-
-* [About](#about)
-* [Supported platforms](#supported-platforms)
-* [Getting started](#getting-started)
-	* [Hardware](#hardware)
-		* [Connections](#connections)
-	* [Software](#software)
-* [Examples](#examples)
-* [API](#api)
-* [Credits](#credits)
-
-<!-- /MarkdownTOC -->
+[[_TOC_]]
 
 ## About
 This is a library for GNU/Linux-based SBCs that helps interfacing with the ST's [VL53L1X time-of-flight distance sensor](https://www.pololu.com/product/3415).
@@ -40,15 +28,26 @@ Before continuing, careful reading of the [product page](https://www.pololu.com/
 TBD
 
 ### Software
-TBD
+This library depends on the [sbc-linux-interfaces library](https://gitlab.com/mjbogusz/sbc-linux-interfaces/).
+It can be accesses either as a git submodule or as an [`ament`](https://design.ros2.org/articles/ament.html) dependency in a [`colcon`](http://design.ros2.org/articles/build_tool.html) (ROS2) workspace.
+
+SBC-linux-interfaces options:
+* git submodule: `git clone --recursive` or `git submodule update --init --recursive`
+* colcon workspace: have the `sbc-linux-interfaces` package available in `colcon_ws/src`
+
+No further action is required - the interfaces library should be picked up by CMake regardless of the selected method.
 
 ## Examples
-Several examples are available that show how to use the library.
+Several examples are available that show how to use the library:
+* `getDistance` is a minimal working example for a single sensor;
+* `multipleSensors` is an example of interfacing with multiple sensors on the same bus.
 
-TBD
-
-## API
-See docs [TBD]
+To build the examples, run `cmake` with the flag: `-DBUILD_EXAMPLES=On` and compile the project.
+Then, the examples can be executed as:
+```sh
+build/examples/getDistance.cpp
+build/examples/multipleSensors.cpp
+```
 
 ## Credits
 * based upon [`DFRobot_VL53L1X Library for Arduino`](https://github.com/DFRobot/DFRobot_VL53L1X) by [luoyufeng](yufeng.luo@dfrobot.com)

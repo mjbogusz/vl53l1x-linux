@@ -2,17 +2,19 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
 	<name>vl53l1x-linux</name>
-	<version>0.1.0</version>
+	<version>0.2.2</version>
 	<description>A VL53L1X sensor interfacing library for GNU/Linux</description>
 
-	<maintainer email="mjbogusz">mjbogusz</maintainer>
-	<license>TBD</license>
+	<maintainer email="mjbogusz@gitlab.com">mjbogusz</maintainer>
+	<license>LGPLv2.1</license>
 
 	<url type="website">https://gitlab.com/mjbogusz/vl53l1x-linux</url>
 	<url type="repository">https://gitlab.com/mjbogusz/vl53l1x-linux</url>
 
 	<buildtool_depend>cmake</buildtool_depend>
 	<doc_depend>doxygen</doc_depend>
+
+	<depend>sbc-linux-interfaces</depend>
 
 	<export>
 		<build_type>cmake</build_type>

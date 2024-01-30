@@ -1,8 +1,12 @@
 image: "mjbogusz/cpp-ci:latest"
 
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+
 stages:
   - check
   - build
+  - deploy
 
 check:cppcheck:
   stage: check
@@ -29,3 +33,15 @@ build:gcc:
   artifacts:
     paths:
       - build
+
+pages:
+  stage: deploy
+  rules:
+    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+  script:
+    - doxygen --version
+    - tools/doxygen.sh
+    - cp -r docs/html public/
+  artifacts:
+    paths:
+      - public

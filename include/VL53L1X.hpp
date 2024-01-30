@@ -1,33 +1,60 @@
 #pragma once
 
-#include "I2CBus.hpp"
+#include <GPIOPin.hpp>
+#include <I2CBus.hpp>
+
 #include <chrono>
 #include <cstdint>
+#include <memory>
 #include <mutex>
 #include <string>
 
-class VL53L1X {
+class VL53L1X: public std::enable_shared_from_this<VL53L1X> {
 public:
+	/**
+	 * A shared_ptr alias (use as VL53L1X::SharedPtr)
+	 */
+	using SharedPtr = std::shared_ptr<VL53L1X>;
+
+	/**
+	 * A shared_ptr to a constant alias (use as VL53L1X::ConstSharedPtr)
+	 */
+	using ConstSharedPtr = std::shared_ptr<const VL53L1X>;
+
+	/**
+	 * Available distance measuring modes, used in VL53L1X::setDistanceMode()
+	 */
 	enum DistanceMode : uint8_t {
-		Short,
-		Long,
-		Unknown
+		DISTANCE_MODE_SHORT,
+		DISTANCE_MODE_LONG,
+		DISTANCE_MODE_UNKNOWN
 		// Medium: TBD
 	};
 
+	/**
+	 * Available measurement timing budgets (milliseconds), used in VL53L1X::setTimingBudget()
+	 */
 	enum TimingBudget : uint16_t {
-		TB_15 = 15,
-		TB_20 = 20,
-		TB_33 = 33,
-		TB_50 = 50,
-		TB_100 = 100,
-		TB_200 = 200,
-		TB_500 = 500
+		TIMING_BUDGET_15_MS = 15,
+		TIMING_BUDGET_20_MS = 20,
+		TIMING_BUDGET_33_MS = 33,
+		TIMING_BUDGET_50_MS = 50,
+		TIMING_BUDGET_100_MS = 100,
+		TIMING_BUDGET_200_MS = 200,
+		TIMING_BUDGET_500_MS = 500
 	};
 
+	/**
+	 * Create a new VL53L1X sensor instance.
+	 *
+	 * @param i2cBus The I2C bus to use
+	 * @param gpioPin The GPIO pin, connected to the sensor's XSHUT pin (nullptr disables shutting down the sensor)
+	 * @param address The sensor's address (only needed if already set to other than the default)
+	 * @param timeout The measurement timeout (default = 0 means no timeout)
+	 */
 	explicit VL53L1X(
-		I2CBus& i2cBus,
-		std::string gpioPath = "",
+		I2CBus::SharedPtr i2cBus,
+		GPIOPin::SharedPtr gpioPin = nullptr,
 		uint8_t address = VL53L1X::DEFAULT_DEVICE_ADDRESS,
 		std::chrono::milliseconds timeout = std::chrono::milliseconds(0)
 	);
@@ -72,7 +99,11 @@ public:
 	bool isDataReady();
 
 	/**
-	 * Get the distance measured by the sensor in mm
+	 * Get the distance measured by the sensor in mm.
+	 *
+	 * This method can return 2 special values:
+	 *  - 65535 means a timeout has occured
+	 *  - 16384 means an out-of-range measurement (>4m)
 	 *
 	 * @return The measured distance
 	 */
@@ -98,13 +129,13 @@ public:
 	VL53L1X::DistanceMode getDistanceMode();
 
 	/**
-	 * Set the timing budget in ms
+	 * Set the timing budget
 	 *
 	 * @see VL53L1X::TimingBudget for possible values
 	 *
 	 * @param timingBudget The timing budget to set
 	 */
-	void setTimingBudgetInMs(VL53L1X::TimingBudget timingBudget);
+	void setTimingBudget(VL53L1X::TimingBudget timingBudget);
 
 	/**
 	 * Get the current timing budget in ms
@@ -130,11 +161,11 @@ public:
 	/**
 	 * Apply the correction offset value (in millimeters) to the sensor
 	 *
-	 * @param The offset, in mm, to apply to the sensor (range: -1024 ~ 1023)
+	 * @param offsetValue The offset, in mm, to apply to the sensor (range: -1024 ~ 1023)
 	 *
 	 * @note This value is to be found during calibration, stored in the host system and applied on every startup.
 	 */
-	void setOffset(int16_t OffsetValue);
+	void setOffset(int16_t offsetValue);
 
 	/**
 	 * Get the currently set correction offset programmed in the sensor
@@ -146,7 +177,7 @@ public:
 	/**
 	 * Apply the crosstalk value (in counts per second) to the sensor
 	 *
-	 * @param The crosstalk correction to apply
+	 * @param crosstalkValue The crosstalk correction to apply
 	 *
 	 * @note As with the offset, this value is to be found during calibration, stored in the host system and applied on every startup.
 	 * @note crosstalkValue = 512*(SignalRate*(1-(Distance/targetDistance)))/SpadNb
@@ -194,6 +225,17 @@ public:
 	 */
 	int8_t calibrateCrosstalk(uint16_t targetDistance);
 
+	/**
+	 * Create a SharedPtr instance of the VL53L1X.
+	 *
+	 * Usage: `VL53L1X::makeShared(args...)`.
+	 * See constructor (@ref VL53L1X::VL53L1X()) for details.
+	 */
+	template<typename ... Args>
+	static VL53L1X::SharedPtr makeShared(Args&& ... args) {
+		return std::make_shared<VL53L1X>(std::forward<Args>(args) ...);
+	}
+
 private:
 	static constexpr uint8_t DEFAULT_DEVICE_ADDRESS = 0x29;
 
@@ -201,11 +243,9 @@ private:
 
 	enum RegisterAddresses : uint16_t;
 
-	I2CBus& i2cBus;
+	I2CBus::SharedPtr i2cBus;
 
-	const std::string gpioPath;
-
-	std::mutex gpioMutex;
+	GPIOPin::SharedPtr gpioPin;
 
 	/**
 	 * I2C address of the sensor
@@ -226,8 +266,6 @@ private:
 
 	// set Sigma Threshold
 	void setSigmaThreshold(uint16_t Sigma);
-
-	void setGPIO(const char& value);
 };
 
 enum VL53L1X::RegisterAddresses : uint16_t {
