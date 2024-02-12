@@ -21,7 +21,7 @@ VL53L1X::VL53L1X(
 	decimal(0.0) {}
 
 void VL53L1X::initialize() {
-	// TODO: soft-restart, GPIO restart (?)
+	// TODO: GPIO restart (?)
 	this->i2cBus->write8Reg16(this->address, SOFT_RESET, 0x00);
 	std::this_thread::sleep_for(1ms);
 	this->i2cBus->write8Reg16(this->address, SOFT_RESET, 0x01);
